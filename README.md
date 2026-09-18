@@ -15,3 +15,5 @@ Scope restrictions:
 
 Expected gate:
 `SwiftUI app -> XcodeGen -> Xcode project -> Google Mobile Ads SPM binary -> xcodebuild (iOS Simulator)`.
+
+CI trigger marker: E0-8
