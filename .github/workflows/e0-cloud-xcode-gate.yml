@@ -1,0 +1,78 @@
+name: E0-8 Cloud Xcode Gate
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build AdMob on macOS Xcode
+    runs-on: macos-26
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Record toolchain
+        run: |
+          set -euxo pipefail
+          mkdir -p Evidence
+          {
+            echo "commit=$GITHUB_SHA"
+            echo "runner_os=$RUNNER_OS"
+            echo "runner_arch=$RUNNER_ARCH"
+            sw_vers
+            xcodebuild -version
+            swift --version
+          } | tee Evidence/toolchain.txt
+
+      - name: Install XcodeGen
+        run: |
+          set -euxo pipefail
+          brew install xcodegen
+          xcodegen --version | tee Evidence/xcodegen-version.txt
+
+      - name: Generate Xcode project
+        run: |
+          set -euxo pipefail
+          xcodegen generate --spec project.yml
+          test -d TILIOE0CloudGate.xcodeproj
+
+      - name: Resolve Google Mobile Ads package
+        run: |
+          set -euxo pipefail
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project TILIOE0CloudGate.xcodeproj \
+            -scheme TILIOE0CloudGate \
+            2>&1 | tee Evidence/package-resolution.log
+          find . -name Package.resolved -print -exec cat {} \; | tee Evidence/package-resolved.txt
+
+      - name: Compile iOS Simulator app
+        run: |
+          set -euxo pipefail
+          xcodebuild \
+            -project TILIOE0CloudGate.xcodeproj \
+            -scheme TILIOE0CloudGate \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build \
+            2>&1 | tee Evidence/build.log
+          grep -F "** BUILD SUCCEEDED **" Evidence/build.log
+
+      - name: Upload gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e0-8-cloud-xcode-evidence
+          path: Evidence/
+          if-no-files-found: warn
+          retention-days: 14
