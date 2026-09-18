@@ -1,0 +1,35 @@
+name: TILIOE0CloudGate
+
+options:
+  bundleIdPrefix: tw.manban.e0
+  deploymentTarget:
+    iOS: "15.0"
+
+packages:
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    exactVersion: 13.10.0
+
+targets:
+  TILIOE0CloudGate:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: tw.manban.e0.cloudxcodegate
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: 5.0
+    dependencies:
+      - package: GoogleMobileAds
+
+schemes:
+  TILIOE0CloudGate:
+    build:
+      targets:
+        TILIOE0CloudGate: all
+    run:
+      config: Debug
